@@ -60,7 +60,6 @@
 * Tax ID
 * Ngày hóa đơn (date)
 * Tổng tiền (total_amount)
-  <div align="center"> <img src="docs/extract_service.png" alt="RegisterFrame" width="400"/> </div>
 
 ### 3.4. Lưu trữ database
 * Lưu thông tin + ảnh gốc.
