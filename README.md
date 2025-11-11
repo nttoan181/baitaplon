@@ -36,7 +36,6 @@
 * Trích xuất thông tin bằng regex/logic.
 * Tạo API + lưu dữ liệu database.
 
----
 
 ## 📌 2. Công nghệ sử dụng
 
@@ -46,12 +45,12 @@
 * **Frontend**: React / Java Swing
 * **Excel Export**: Pandas / openpyxl
 
----
 
 ## ⚡ 3. Chức năng hệ thống
 
 ### 3.1. Upload ảnh hóa đơn
 * Hỗ trợ JPG / PNG / PDF.
+  <div align="center"> <img src="docs/register_frame.png" alt="RegisterFrame" width="400"/> </div>
 
 ### 3.2. OCR tự động
 * Nhận diện tiếng Việt + tiếng Anh.
@@ -61,26 +60,32 @@
 * Tax ID
 * Ngày hóa đơn (date)
 * Tổng tiền (total_amount)
+  <div align="center"> <img src="docs/register_frame.png" alt="RegisterFrame" width="400"/> </div>
 
 ### 3.4. Lưu trữ database
 * Lưu thông tin + ảnh gốc.
+  <div align="center"> <img src="docs/register_frame.png" alt="RegisterFrame" width="400"/> </div>
 
 ### 3.5. Tìm kiếm hóa đơn
 * Theo ID hoặc từ khóa.
+  <div align="center"> <img src="docs/register_frame.png" alt="RegisterFrame" width="400"/> </div>
 
 ### 3.6. Xem chi tiết hóa đơn
 * Hiển thị ảnh + dữ liệu đã trích.
+  <div align="center"> <img src="docs/register_frame.png" alt="RegisterFrame" width="400"/> </div>
 
 ### 3.7. Phân tích biểu đồ
 * Biểu đồ chi phí theo thời gian.
+  <div align="center"> <img src="docs/register_frame.png" alt="RegisterFrame" width="400"/> </div>
 
 ### 3.8. Xuất Excel
 * Xuất danh sách hóa đơn ra file `.xlsx`.
+  <div align="center"> <img src="docs/register_frame.png" alt="RegisterFrame" width="400"/> </div>
 
 ### 3.9. Xóa hóa đơn
 * Xóa mềm hoặc xóa vĩnh viễn.
+  <div align="center"> <img src="docs/register_frame.png" alt="RegisterFrame" width="400"/> </div>
 
----
 
 ## 💻 4. Các thành phần chính
 
