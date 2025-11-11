@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="vi" class="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Thông tin hóa đơn</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap&subset=vietnamese" rel="stylesheet" />
+  <style>
+    body { 
+      color:#0f172a; 
+      font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji'; 
+      background: 
+        radial-gradient(1200px 600px at 20% -10%, rgba(99,102,241,0.15), transparent 60%),
+        radial-gradient(1000px 500px at 90% 0%, rgba(16,185,129,0.15), transparent 60%),
+        radial-gradient(800px 400px at 50% 50%, rgba(168,85,247,0.1), transparent 70%),
+        linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
+      position: relative;
+    }
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-image: 
+        url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%236366f1' fill-opacity='0.03'%3E%3Cpath d='M30 0h30v30H30V0zm0 30h30v30H30V30zM0 0h30v30H0V0zm0 30h30v30H0V30z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E"),
+        url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%2316a34a' fill-opacity='0.02'%3E%3Cpath d='M20 0L40 20L20 40L0 20z'/%3E%3C/g%3E%3C/svg%3E");
+      background-size: 60px 60px, 40px 40px;
+      background-position: 0 0, 30px 30px;
+      pointer-events: none;
+      z-index: -1;
+    }
+    .glass { 
+      background: rgba(255,255,255,0.7); 
+      backdrop-filter: saturate(160%) blur(8px); 
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+    .btn-gradient { 
+      background: linear-gradient(135deg, #6366f1, #22c55e); 
+      color:white; 
+      box-shadow: 0 4px 15px rgba(99,102,241,0.3);
+    }
+    .btn-gradient:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(99,102,241,0.4);
+    }
+    .ocr-text { white-space: pre-wrap; word-break: break-word; overflow-wrap: anywhere; }
+  </style>
+</head>
+<body class="min-h-screen p-6">
+  <div class="max-w-5xl mx-auto">
+    <div class="flex items-center justify-between mb-6">
+      <h1 class="text-3xl font-semibold">Hóa đơn #{{ invoice.id }}</h1>
+      <a href="/dashboard" class="btn-gradient px-4 py-2 rounded shadow">Quay lại</a>
+    </div>
+    <div class="grid grid-cols-12 gap-6">
+      <div class="col-span-12 lg:col-span-7 glass rounded shadow p-6">
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <div class="text-slate-500 text-sm">File</div>
+            <div class="text-slate-800">{{ invoice.filename }}</div>
+          </div>
+          <div>
+            <div class="text-slate-500 text-sm">Nhà cung cấp</div>
+            <div class="text-slate-800">{{ invoice.vendor or '' }}</div>
+          </div>
+          <div>
+            <div class="text-slate-500 text-sm">Mã số thuế</div>
+            <div class="text-slate-800">{{ invoice.tax_id or '' }}</div>
+          </div>
+          <div>
+            <div class="text-slate-500 text-sm">Tổng tiền</div>
+            <div class="text-slate-800">{{ invoice.total_amount or '' }}</div>
+          </div>
+          <div>
+            <div class="text-slate-500 text-sm">Ngày</div>
+            <div class="text-slate-800">{{ invoice.date or '' }}</div>
+          </div>
+          <div>
+            <div class="text-slate-500 text-sm">Tạo lúc</div>
+            <div class="text-slate-800">{{ invoice.created_at or '' }}</div>
+          </div>
+        </div>
+        <div class="mt-6">
+          <div class="text-slate-500 text-sm mb-2">Văn bản OCR</div>
+          <pre class="ocr-text bg-white/70 p-4 rounded text-slate-800 border border-slate-200">{{ invoice.raw_text }}</pre>
+        </div>
+      </div>
+      <div class="col-span-12 lg:col-span-5 glass rounded shadow p-6 flex items-center justify-center">
+        {% if image_url %}
+          <img src="{{ image_url }}" alt="Invoice preview" class="max-h-[70vh] w-auto rounded border border-slate-200 shadow" />
+        {% else %}
+          <div class="text-slate-500 text-sm">Không có ảnh xem trước cho file này.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="max-w-5xl mx-auto mt-6 grid grid-cols-12 gap-6">
+    <div class="col-span-12 glass rounded shadow p-6">
+      <div class="flex items-center justify-between mb-4">
+        <div class="text-lg font-semibold">Biểu đồ phân tích văn bản</div>
+      </div>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div>
+          <div class="text-slate-500 text-sm mb-2">Phân bố số tiền</div>
+          <canvas id="charBreakdown"></canvas>
+        </div>
+        <div>
+          <div class="text-slate-500 text-sm mb-2">Top 10 số tiền cao nhất</div>
+          <canvas id="lineLengths"></canvas>
+        </div>
+        <div>
+          <div class="text-slate-500 text-sm mb-2">Phân tích ngày tháng</div>
+          <canvas id="diacritics"></canvas>
+        </div>
+        <div>
+          <div class="text-slate-500 text-sm mb-2">Độ dài số liệu</div>
+          <canvas id="topKeywords"></canvas>
+        </div>
+        <div class="lg:col-span-2">
+          <div class="text-slate-500 text-sm mb-2">Biểu đồ xu hướng số liệu</div>
+          <canvas id="lineChart"></canvas>
+        </div>
+      </div>
+      
+      <!-- Statistics Table -->
+      <div class="mt-8">
+        <div class="text-lg font-semibold mb-4">Thống kê quan trọng</div>
+        <div class="glass rounded shadow p-6">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="text-center">
+              <div class="text-3xl font-bold text-green-600" id="maxAmount">0</div>
+              <div class="text-slate-500 text-sm">Số tiền cao nhất</div>
+            </div>
+            <div class="text-center">
+              <div class="text-3xl font-bold text-blue-600" id="totalAmount">0</div>
+              <div class="text-slate-500 text-sm">Tổng số tiền</div>
+            </div>
+            <div class="text-center">
+              <div class="text-3xl font-bold text-orange-600" id="totalDates">0</div>
+              <div class="text-slate-500 text-sm">Số ngày tìm thấy</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    document.addEventListener('DOMContentLoaded', function(){
+      const pre = document.querySelector('.ocr-text');
+      if(!pre) return;
+      const text = pre.textContent || '';
+      if(!text.trim()) return;
+      
+      // Extract numbers and amounts
+      const numbers = text.match(/\d+[\.,]?\d*/g) || [];
+      const amounts = numbers.map(n => {
+        const clean = n.replace(/[^\d.,]/g, '').replace(/\./g, '').replace(',', '.');
+        const num = parseFloat(clean);
+        return isNaN(num) ? 0 : num;
+      }).filter(n => n > 0);
+      
+      // Amount distribution
+      const ctx1 = document.getElementById('charBreakdown');
+      if(ctx1 && amounts.length > 0){
+        const ranges = [
+          { label: '< 1M', count: amounts.filter(a => a < 1000000).length },
+          { label: '1M-10M', count: amounts.filter(a => a >= 1000000 && a < 10000000).length },
+          { label: '10M-100M', count: amounts.filter(a => a >= 10000000 && a < 100000000).length },
+          { label: '> 100M', count: amounts.filter(a => a >= 100000000).length }
+        ].filter(r => r.count > 0);
+        
+        new Chart(ctx1, {
+          type: 'doughnut',
+          data: { 
+            labels: ranges.map(r => r.label), 
+            datasets: [{ 
+              data: ranges.map(r => r.count), 
+              backgroundColor: ['#6366f1','#22c55e','#f59e0b','#ef4444'] 
+            }] 
+          },
+          options: { plugins: { legend: { position: 'bottom' } } }
+        });
+      }
+      
+      // Top amounts found
+      const ctx2 = document.getElementById('lineLengths');
+      if(ctx2 && amounts.length > 0){
+        const topAmounts = amounts.sort((a,b) => b-a).slice(0, 10);
+        new Chart(ctx2, {
+          type: 'bar',
+          data: { 
+            labels: topAmounts.map((a,i) => `Số ${i+1}`), 
+            datasets: [{ 
+              label: 'Giá trị (VNĐ)', 
+              data: topAmounts, 
+              backgroundColor: '#60a5fa' 
+            }] 
+          },
+          options: { 
+            scales: { 
+              y: { 
+                beginAtZero: true,
+                ticks: {
+                  callback: function(value) {
+                    return new Intl.NumberFormat('vi-VN').format(value);
+                  }
+                }
+              } 
+            }, 
+            plugins: { legend: { display: false } } 
+          }
+        });
+      }
+      
+      // Date analysis
+      const dates = text.match(/\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}/g) || [];
+      const ctx3 = document.getElementById('diacritics');
+      if(ctx3 && dates.length > 0){
+        const monthCounts = new Array(12).fill(0);
+        dates.forEach(date => {
+          const parts = date.split(/[\/\-\.]/);
+          if(parts.length >= 2) {
+            const month = parseInt(parts[1]) - 1;
+            if(month >= 0 && month < 12) monthCounts[month]++;
+          }
+        });
+        
+        new Chart(ctx3, {
+          type: 'pie',
+          data: { 
+            labels: ['Có ngày', 'Không có ngày'], 
+            datasets: [{ 
+              data: [dates.length, Math.max(0, text.split('\n').length - dates.length)], 
+              backgroundColor: ['#f43f5e','#3b82f6'] 
+            }] 
+          },
+          options: { plugins: { legend: { position: 'bottom' } } }
+        });
+      }
+      
+      // Number frequency analysis
+      const ctx4 = document.getElementById('topKeywords');
+      if(ctx4 && numbers.length > 0){
+        const freq = new Map();
+        numbers.forEach(n => {
+          const key = n.length <= 3 ? 'Ngắn (1-3)' : 
+                     n.length <= 6 ? 'Trung bình (4-6)' : 
+                     n.length <= 10 ? 'Dài (7-10)' : 'Rất dài (>10)';
+          freq.set(key, (freq.get(key) || 0) + 1);
+        });
+        
+        const entries = Array.from(freq.entries()).sort((a,b) => b[1]-a[1]);
+        new Chart(ctx4, {
+          type: 'bar',
+          data: { 
+            labels: entries.map(x => x[0]), 
+            datasets: [{ 
+              label: 'Số lượng', 
+              data: entries.map(x => x[1]), 
+              backgroundColor: '#10b981' 
+            }] 
+          },
+          options: { 
+            indexAxis: 'y', 
+            scales: { x: { beginAtZero: true } }, 
+            plugins: { legend: { display: false } } 
+          }
+        });
+      }
+      
+      // Line chart for trend analysis
+      const ctx5 = document.getElementById('lineChart');
+      if(ctx5 && amounts.length > 0){
+        const sortedAmounts = amounts.sort((a,b) => a-b);
+        const step = Math.max(1, Math.floor(sortedAmounts.length / 10));
+        const trendData = [];
+        const trendLabels = [];
+        
+        for(let i = 0; i < sortedAmounts.length; i += step){
+          trendData.push(sortedAmounts[i]);
+          trendLabels.push(`Điểm ${Math.floor(i/step) + 1}`);
+        }
+        
+        new Chart(ctx5, {
+          type: 'line',
+          data: { 
+            labels: trendLabels, 
+            datasets: [{ 
+              label: 'Xu hướng số tiền', 
+              data: trendData, 
+              borderColor: '#6366f1',
+              backgroundColor: 'rgba(99, 102, 241, 0.1)',
+              tension: 0.4,
+              fill: true
+            }] 
+          },
+          options: { 
+            scales: { 
+              y: { 
+                beginAtZero: true,
+                ticks: {
+                  callback: function(value) {
+                    return new Intl.NumberFormat('vi-VN').format(value);
+                  }
+                }
+              } 
+            },
+            plugins: { legend: { display: false } } 
+          }
+        });
+      }
+      
+      // Update statistics - chỉ thông tin quan trọng
+      const maxAmount = amounts.length > 0 ? Math.max(...amounts) : 0;
+      const totalAmount = amounts.reduce((a,b) => a+b, 0);
+      
+      // Debug: log để kiểm tra
+      console.log('Amounts:', amounts);
+      console.log('Dates:', dates);
+      console.log('Max amount:', maxAmount);
+      console.log('Total amount:', totalAmount);
+      
+      // Cập nhật với kiểm tra element tồn tại
+      const maxEl = document.getElementById('maxAmount');
+      const totalEl = document.getElementById('totalAmount');
+      const datesEl = document.getElementById('totalDates');
+      
+      if(maxEl) maxEl.textContent = new Intl.NumberFormat('vi-VN').format(maxAmount);
+      if(totalEl) totalEl.textContent = new Intl.NumberFormat('vi-VN').format(totalAmount);
+      if(datesEl) datesEl.textContent = dates.length;
+    });
+  </script>
+</body>
+</html>
+
+
+
+

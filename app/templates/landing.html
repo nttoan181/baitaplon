@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="vi" class="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Invoice OCR - Tự động nhập liệu hóa đơn</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap&subset=vietnamese" rel="stylesheet" />
+  <style>
+    body { 
+      color:#0f172a; 
+      font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji'; 
+      background: 
+        radial-gradient(1200px 600px at 20% -10%, rgba(99,102,241,0.15), transparent 60%),
+        radial-gradient(1000px 500px at 90% 0%, rgba(16,185,129,0.15), transparent 60%),
+        radial-gradient(800px 400px at 50% 50%, rgba(168,85,247,0.1), transparent 70%),
+        linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
+      position: relative;
+      overflow-x: hidden;
+    }
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-image: 
+        url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%236366f1' fill-opacity='0.03'%3E%3Cpath d='M30 0h30v30H30V0zm0 30h30v30H30V30zM0 0h30v30H0V0zm0 30h30v30H0V30z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E"),
+        url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%2316a34a' fill-opacity='0.02'%3E%3Cpath d='M20 0L40 20L20 40L0 20z'/%3E%3C/g%3E%3C/svg%3E");
+      background-size: 60px 60px, 40px 40px;
+      background-position: 0 0, 30px 30px;
+      pointer-events: none;
+      z-index: -1;
+    }
+    .glass {
+      background: rgba(255,255,255,0.7);
+      backdrop-filter: saturate(160%) blur(8px);
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+    .btn-gradient {
+      background: linear-gradient(135deg, #6366f1, #22c55e);
+      color: white;
+      box-shadow: 0 4px 15px rgba(99,102,241,0.3);
+      transition: all 0.3s ease;
+    }
+    .btn-gradient:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(99,102,241,0.4);
+    }
+    .floating {
+      animation: floating 3s ease-in-out infinite;
+    }
+    @keyframes floating {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-10px); }
+    }
+    .fade-in {
+      animation: fadeIn 1s ease-in;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .slide-in-left {
+      animation: slideInLeft 1s ease-out;
+    }
+    @keyframes slideInLeft {
+      from { opacity: 0; transform: translateX(-50px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    .slide-in-right {
+      animation: slideInRight 1s ease-out;
+    }
+    @keyframes slideInRight {
+      from { opacity: 0; transform: translateX(50px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    .invoice-icon-large {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236366f1' stroke-width='1.5'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z' /%3E%3C/svg%3E");
+      background-size: 120px 120px;
+      background-repeat: no-repeat;
+      background-position: center;
+      width: 200px;
+      height: 200px;
+      margin: 0 auto;
+    }
+  </style>
+</head>
+<body class="min-h-screen">
+  <!-- Navigation -->
+  <nav class="glass fixed top-0 left-0 right-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center py-4">
+        <div class="flex items-center space-x-2">
+          <div class="w-8 h-8 bg-gradient-to-r from-indigo-500 to-green-500 rounded-lg flex items-center justify-center">
+            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+          </div>
+          <span class="text-xl font-bold text-slate-800">Invoice OCR</span>
+        </div>
+        <div class="hidden md:flex items-center space-x-8">
+          <a href="#features" class="text-slate-600 hover:text-indigo-600 transition-colors">Tính năng</a>
+          <a href="#how-it-works" class="text-slate-600 hover:text-indigo-600 transition-colors">Cách hoạt động</a>
+          <a href="/dashboard" class="btn-gradient px-6 py-2 rounded-lg">Bắt đầu</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="pt-32 pb-20 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-7xl mx-auto">
+      <div class="text-center">
+        <div class="invoice-icon-large floating mb-8"></div>
+        <h1 class="text-5xl md:text-6xl font-bold text-slate-900 mb-6 fade-in">
+          Tự động nhập liệu
+          <span class="bg-gradient-to-r from-indigo-600 to-green-600 bg-clip-text text-transparent">
+            hóa đơn
+          </span>
+        </h1>
+        <p class="text-xl text-slate-600 mb-8 max-w-3xl mx-auto fade-in">
+          Sử dụng công nghệ OCR tiên tiến để tự động trích xuất thông tin từ hóa đơn, 
+          chứng từ kế toán một cách chính xác và nhanh chóng.
+        </p>
+        <div class="flex flex-col sm:flex-row gap-4 justify-center fade-in">
+          <a href="/dashboard" class="btn-gradient px-8 py-4 rounded-lg text-lg font-semibold">
+            Bắt đầu ngay
+          </a>
+          <a href="#features" class="px-8 py-4 border-2 border-slate-300 text-slate-700 rounded-lg text-lg font-semibold hover:border-indigo-500 hover:text-indigo-600 transition-colors">
+            Tìm hiểu thêm
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section id="features" class="py-20 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-7xl mx-auto">
+      <div class="text-center mb-16">
+        <h2 class="text-4xl font-bold text-slate-900 mb-4">Tính năng nổi bật</h2>
+        <p class="text-xl text-slate-600">Công nghệ hiện đại cho việc xử lý hóa đơn thông minh</p>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div class="glass p-8 rounded-2xl slide-in-left">
+          <div class="w-12 h-12 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-lg flex items-center justify-center mb-6">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+            </svg>
+          </div>
+          <h3 class="text-xl font-semibold text-slate-900 mb-4">OCR Tiếng Việt</h3>
+          <p class="text-slate-600">Nhận diện chữ viết tiếng Việt có dấu với độ chính xác cao, hỗ trợ nhiều font chữ khác nhau.</p>
+        </div>
+        <div class="glass p-8 rounded-2xl fade-in">
+          <div class="w-12 h-12 bg-gradient-to-r from-green-500 to-teal-500 rounded-lg flex items-center justify-center mb-6">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+            </svg>
+          </div>
+          <h3 class="text-xl font-semibold text-slate-900 mb-4">Phân tích thông minh</h3>
+          <p class="text-slate-600">Tự động trích xuất thông tin quan trọng như nhà cung cấp, mã số thuế, tổng tiền, ngày tháng.</p>
+        </div>
+        <div class="glass p-8 rounded-2xl slide-in-right">
+          <div class="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg flex items-center justify-center mb-6">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+          </div>
+          <h3 class="text-xl font-semibold text-slate-900 mb-4">Xuất Excel</h3>
+          <p class="text-slate-600">Xuất dữ liệu ra file Excel với định dạng đẹp, hỗ trợ tiếng Việt và dễ dàng chỉnh sửa.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- How it works -->
+  <section id="how-it-works" class="py-20 px-4 sm:px-6 lg:px-8 bg-white/30">
+    <div class="max-w-7xl mx-auto">
+      <div class="text-center mb-16">
+        <h2 class="text-4xl font-bold text-slate-900 mb-4">Cách hoạt động</h2>
+        <p class="text-xl text-slate-600">Chỉ với 3 bước đơn giản</p>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div class="text-center">
+          <div class="w-16 h-16 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-6">
+            <span class="text-2xl font-bold text-white">1</span>
+          </div>
+          <h3 class="text-xl font-semibold text-slate-900 mb-4">Upload ảnh</h3>
+          <p class="text-slate-600">Tải lên ảnh hóa đơn hoặc chứng từ kế toán cần xử lý</p>
+        </div>
+        <div class="text-center">
+          <div class="w-16 h-16 bg-gradient-to-r from-green-500 to-teal-500 rounded-full flex items-center justify-center mx-auto mb-6">
+            <span class="text-2xl font-bold text-white">2</span>
+          </div>
+          <h3 class="text-xl font-semibold text-slate-900 mb-4">OCR xử lý</h3>
+          <p class="text-slate-600">Hệ thống tự động nhận diện và trích xuất thông tin từ ảnh</p>
+        </div>
+        <div class="text-center">
+          <div class="w-16 h-16 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
+            <span class="text-2xl font-bold text-white">3</span>
+          </div>
+          <h3 class="text-xl font-semibold text-slate-900 mb-4">Kết quả</h3>
+          <p class="text-slate-600">Xem kết quả, chỉnh sửa và xuất dữ liệu ra Excel</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Section -->
+  <section class="py-20 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-4xl mx-auto text-center">
+      <h2 class="text-4xl font-bold text-slate-900 mb-6">Sẵn sàng bắt đầu?</h2>
+      <p class="text-xl text-slate-600 mb-8">Trải nghiệm công nghệ OCR tiên tiến ngay hôm nay</p>
+      <a href="/dashboard" class="btn-gradient px-12 py-4 rounded-lg text-xl font-semibold">
+        Truy cập Dashboard
+      </a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="glass border-t border-slate-200 py-8 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-7xl mx-auto text-center">
+      <div class="flex items-center justify-center space-x-2 mb-4">
+        <div class="w-6 h-6 bg-gradient-to-r from-indigo-500 to-green-500 rounded flex items-center justify-center">
+          <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+          </svg>
+        </div>
+        <span class="text-lg font-semibold text-slate-800">Invoice OCR</span>
+      </div>
+      <p class="text-slate-600">© 2024 Invoice OCR. Tự động hóa việc xử lý hóa đơn và chứng từ kế toán.</p>
+    </div>
+  </footer>
+</body>
+</html>
+
+
+
